@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小红书文案生成看板</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <header class="header">
+            <h1>小红书文案生成看板</h1>
+            <nav class="nav">
+                <button class="nav-btn active" data-page="settings">设置</button>
+                <button class="nav-btn" data-page="upload">数据导入</button>
+                <button class="nav-btn" data-page="analyze">话题分析</button>
+                <button class="nav-btn" data-page="generate">文案生成</button>
+            </nav>
+        </header>
+
+        <!-- 页面内容 -->
+        <main class="main">
+            <!-- 设置页面 -->
+            <section id="page-settings" class="page active">
+                <div class="card">
+                    <h2>API Key 管理</h2>
+                    <div class="form-row">
+                        <select id="model-type">
+                            <option value="mimo">mimo</option>
+                            <option value="openai">openai</option>
+                        </select>
+                        <input type="text" id="api-key" placeholder="输入 API Key（至少10个字符）">
+                        <button id="btn-add-key" class="btn btn-primary">添加</button>
+                    </div>
+                    <table class="table" id="key-table">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>模型</th>
+                                <th>API Key</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h2>产品优势配置</h2>
+                    <textarea id="advantages-text" rows="10" placeholder="在此编辑产品优势..."></textarea>
+                    <button id="btn-save-advantages" class="btn btn-primary">保存</button>
+                </div>
+
+                <div class="card">
+                    <h2>提示词配置</h2>
+                    <textarea id="prompt-text" rows="10" placeholder="在此编辑提示词..."></textarea>
+                    <button id="btn-save-prompt" class="btn btn-primary">保存</button>
+                </div>
+            </section>
+
+            <!-- 数据导入页面 -->
+            <section id="page-upload" class="page">
+                <div class="card">
+                    <h2>上传数据文件</h2>
+                    <div class="upload-area" id="upload-area">
+                        <p>拖拽 .jsonl 文件到此处，或点击选择文件</p>
+                        <input type="file" id="file-input" accept=".jsonl" hidden>
+                    </div>
+                    <div id="upload-result" class="hidden">
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-label">总行数</span>
+                                <span class="stat-value" id="stat-total">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">有效行数</span>
+                                <span class="stat-value" id="stat-valid">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">无效行数</span>
+                                <span class="stat-value" id="stat-invalid">0</span>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>高频词</h3>
+                            <div id="word-freq" class="word-freq"></div>
+                        </div>
+                        <div class="card">
+                            <h3>内容预览</h3>
+                            <div id="content-preview" class="content-preview"></div>
+                        </div>
+                        <button id="btn-analyze" class="btn btn-primary">开始分析</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 话题分析页面 -->
+            <section id="page-analyze" class="page">
+                <div class="card">
+                    <h2>话题卡片</h2>
+                    <div id="topic-cards" class="topic-cards">
+                        <p class="placeholder">请先上传数据并点击「开始分析」</p>
+                    </div>
+                    <button id="btn-confirm-topic" class="btn btn-primary hidden">确认选题</button>
+                </div>
+            </section>
+
+            <!-- 文案生成页面 -->
+            <section id="page-generate" class="page">
+                <div class="card">
+                    <h2>生成文案</h2>
+                    <div class="form-row">
+                        <select id="route-type">
+                            <option value="KIND_REMINDER">纯科普文案</option>
+                            <option value="MARKETING">科普+营销文案</option>
+                        </select>
+                        <button id="btn-generate" class="btn btn-primary">生成文案</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>文案内容</h2>
+                    <div id="content-output" class="content-output">
+                        <p class="placeholder">选择话题和路线后，点击「生成文案」</p>
+                    </div>
+                    <div class="btn-group">
+                        <button id="btn-copy" class="btn btn-secondary">一键复制</button>
+                        <button id="btn-refine" class="btn btn-secondary">微调文案</button>
+                    </div>
+                </div>
+                <div class="card" id="refine-section" style="display:none;">
+                    <h2>微调对话</h2>
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="refine-input" placeholder="输入修改意见...">
+                        <button id="btn-send-refine" class="btn btn-primary">发送</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

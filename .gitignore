@@ -1,0 +1,33 @@
+# 配置文件（包含 API Key）
+config/llm.json
+
+# 数据文件
+*.jsonl
+*.json
+
+# 测试文件
+test_*.json
+extracted_contents.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
