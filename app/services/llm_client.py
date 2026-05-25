@@ -65,8 +65,9 @@ async def stream_completion(base_url: str, headers: dict, payload: dict) -> Asyn
                         break
                     try:
                         data = json.loads(line)
-                        content = data["choices"][0]["delta"].get("content", "")
-                        if content:
-                            yield content
+                        if "choices" in data and len(data["choices"]) > 0:
+                            content = data["choices"][0].get("delta", {}).get("content", "")
+                            if content:
+                                yield content
                     except json.JSONDecodeError:
                         continue

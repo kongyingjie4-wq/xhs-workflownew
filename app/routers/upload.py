@@ -56,6 +56,7 @@ async def upload_file(file: UploadFile = File(...)):
             "invalid_lines": invalid_lines,
             "contents": contents[:100],
             "word_freq": analysis["word_freq"],
+            "word_comments": analysis["word_comments"],
             "topic_clusters": analysis["topic_clusters"],
         },
     }

@@ -1,7 +1,7 @@
 // 全局状态
 const state = {
     uploadData: null,
-    selectedTopic: null,
+    selectedTopics: [], // 改成数组，支持多选
     currentText: '',
 };
 
@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAnalyze();
     initGenerate();
     initRefine();
+    initModal();
     loadKeys();
 });
 
@@ -159,10 +160,27 @@ function renderUploadResult(data) {
     document.getElementById('stat-invalid').textContent = data.invalid_lines;
 
     const wordFreq = document.getElementById('word-freq');
-    wordFreq.innerHTML = Object.entries(data.word_freq)
-        .slice(0, 20)
-        .map(([word, count]) => `<span class="word-tag">${word} (${count})</span>`)
+    const wordEntries = Object.entries(data.word_freq).slice(0, 20);
+
+    // 调试信息
+    console.log('word_freq:', data.word_freq);
+    console.log('word_comments:', data.word_comments);
+    console.log('wordEntries:', wordEntries);
+
+    wordFreq.innerHTML = wordEntries
+        .map(([word, count]) => `<span class="word-tag" data-word="${word}">${word} (${count})</span>`)
         .join('');
+
+    // 给高频词标签添加点击事件
+    wordFreq.querySelectorAll('.word-tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+            const word = tag.dataset.word;
+            console.log('点击了:', word);
+            console.log('word_comments[word]:', data.word_comments[word]);
+            const comments = data.word_comments[word] || [];
+            showModal(word, comments);
+        });
+    });
 
     const preview = document.getElementById('content-preview');
     preview.innerHTML = data.contents
@@ -184,67 +202,57 @@ async function startAnalyze() {
         return;
     }
 
-    const topicCards = document.getElementById('topic-cards');
-    topicCards.innerHTML = '<p class="placeholder">正在分析中...</p>';
-    document.getElementById('btn-confirm-topic').classList.add('hidden');
-
     // 切换到分析页面
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelector('[data-page="analyze"]').classList.add('active');
     document.getElementById('page-analyze').classList.add('active');
 
-    let fullResponse = '';
-
-    await analyzeApi.analyze(
-        state.uploadData.word_freq,
-        state.uploadData.topic_clusters,
-        (chunk) => {
-            fullResponse += chunk;
-        },
-        () => {
-            try {
-                const topics = JSON.parse(fullResponse);
-                renderTopicCards(topics);
-                document.getElementById('btn-confirm-topic').classList.remove('hidden');
-            } catch (e) {
-                topicCards.innerHTML = '<p class="placeholder">解析失败，请重试</p>';
-            }
-        },
-        (error) => {
-            topicCards.innerHTML = `<p class="placeholder">分析失败: ${error}</p>`;
-        }
-    );
+    // 直接用高频词作为主题，不需要大模型分析
+    renderTopicKeywords(state.uploadData.word_freq);
+    document.getElementById('btn-confirm-topic').classList.remove('hidden');
 }
 
-function renderTopicCards(topics) {
-    const container = document.getElementById('topic-cards');
-    container.innerHTML = topics.map(topic => `
-        <div class="topic-card" data-id="${topic.id}" data-title="${topic.title}" data-summary="${topic.summary}">
-            <h4>${topic.title}</h4>
-            <p>${topic.summary}</p>
-            <div class="topic-keywords">
-                ${topic.keywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
-            </div>
-        </div>
-    `).join('');
+function renderTopicKeywords(wordFreq) {
+    const container = document.getElementById('topic-keywords');
+    const selectedList = document.getElementById('selected-list');
 
-    container.querySelectorAll('.topic-card').forEach(card => {
-        card.addEventListener('click', () => {
-            container.querySelectorAll('.topic-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            state.selectedTopic = {
-                id: card.dataset.id,
-                title: card.dataset.title,
-                summary: card.dataset.summary,
-            };
+    // 渲染高频词标签
+    container.innerHTML = Object.entries(wordFreq)
+        .map(([word, count]) => `
+            <div class="topic-keyword-item" data-word="${word}">
+                ${word} (${count})
+            </div>
+        `).join('');
+
+    // 绑定点击事件
+    container.querySelectorAll('.topic-keyword-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const word = item.dataset.word;
+            if (item.classList.contains('selected')) {
+                // 取消选择
+                item.classList.remove('selected');
+                state.selectedTopics = state.selectedTopics.filter(t => t !== word);
+            } else {
+                // 选择
+                item.classList.add('selected');
+                state.selectedTopics.push(word);
+            }
+            updateSelectedList();
         });
     });
+
+    // 更新已选主题列表
+    function updateSelectedList() {
+        selectedList.innerHTML = state.selectedTopics
+            .map(word => `<span class="selected-tag">${word}</span>`)
+            .join('');
+    }
 }
 
 function confirmTopic() {
-    if (!state.selectedTopic) {
-        showMessage('请选择一个话题');
+    if (state.selectedTopics.length === 0) {
+        showMessage('请至少选择一个主题关键词');
         return;
     }
 
@@ -263,8 +271,8 @@ function initGenerate() {
 }
 
 async function generateContent() {
-    if (!state.selectedTopic) {
-        showMessage('请先选择话题');
+    if (state.selectedTopics.length === 0) {
+        showMessage('请先选择主题关键词');
         return;
     }
 
@@ -275,9 +283,13 @@ async function generateContent() {
 
     document.getElementById('btn-generate').disabled = true;
 
+    // 把选中的高频词作为主题传给大模型
+    const topic = state.selectedTopics.join('、');
+    const topicSummary = `用户关注的主题：${topic}`;
+
     await generateApi.generate(
-        state.selectedTopic.title,
-        state.selectedTopic.summary,
+        topic,
+        topicSummary,
         route_type,
         (chunk) => {
             state.currentText += chunk;
@@ -339,10 +351,12 @@ async function sendRefine() {
     assistantMsg.className = 'chat-message assistant';
     messages.appendChild(assistantMsg);
 
+    // 保存当前文案，然后清空准备接收新文案
+    const previousText = state.currentText;
     state.currentText = '';
 
     await refineApi.refine(
-        state.currentText,
+        previousText,  // 传递之前的文案
         instruction,
         (chunk) => {
             state.currentText += chunk;
@@ -377,4 +391,32 @@ function loadDraft() {
 // 消息提示
 function showMessage(msg) {
     alert(msg);
+}
+
+// 弹窗功能
+function initModal() {
+    const modal = document.getElementById('modal');
+    const closeBtn = document.getElementById('modal-close');
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+function showModal(title, comments) {
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+
+    modalTitle.textContent = `包含「${title}」的评论 (${comments.length}条)`;
+    modalBody.innerHTML = comments.length > 0
+        ? comments.map(c => `<div class="modal-comment">${c}</div>`).join('')
+        : '<p style="text-align:center;color:#999;">暂无相关评论</p>';
+
+    modal.classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
 }

@@ -99,11 +99,16 @@
             <!-- 话题分析页面 -->
             <section id="page-analyze" class="page">
                 <div class="card">
-                    <h2>话题卡片</h2>
-                    <div id="topic-cards" class="topic-cards">
+                    <h2>选择主题关键词</h2>
+                    <p class="tip">选择至少一个高频词作为文案主题（可多选）</p>
+                    <div id="topic-keywords" class="topic-keywords-select">
                         <p class="placeholder">请先上传数据并点击「开始分析」</p>
                     </div>
-                    <button id="btn-confirm-topic" class="btn btn-primary hidden">确认选题</button>
+                    <div class="selected-topics">
+                        <h3>已选主题：</h3>
+                        <div id="selected-list" class="selected-list"></div>
+                    </div>
+                    <button id="btn-confirm-topic" class="btn btn-primary hidden">确认选题，开始生成文案</button>
                 </div>
             </section>
 
@@ -139,6 +144,17 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- 弹窗：显示关键词对应的评论 -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">关键词评论</h3>
+                <button id="modal-close" class="modal-close">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body"></div>
+        </div>
     </div>
 
     <script src="js/api.js"></script>
