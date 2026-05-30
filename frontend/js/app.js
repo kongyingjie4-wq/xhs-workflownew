@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导航切换
 function initNav() {
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    document.querySelectorAll('[data-page]').forEach(btn => {
         btn.addEventListener('click', () => {
             const page = btn.dataset.page;
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('[data-page]').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(`page-${page}`).classList.add('active');
@@ -51,12 +51,12 @@ function renderKeys(keys) {
     tbody.innerHTML = keys.map((key, index) => `
         <tr>
             <td>${index + 1}</td>
-            <td>${key.model_type}</td>
-            <td>${key.api_key}</td>
-            <td>${key.is_active ? '<span class="btn-success" style="padding:2px 8px;border-radius:4px;">已激活</span>' : '未激活'}</td>
+            <td><span class="badge bg-info">${key.model_type}</span></td>
+            <td><code>${key.api_key}</code></td>
+            <td>${key.is_active ? '<span class="badge bg-success">已激活</span>' : '<span class="badge bg-secondary">未激活</span>'}</td>
             <td>
-                <button onclick="activateKey(${key.id})" class="btn btn-primary" style="padding:4px 12px;margin-right:5px;" ${key.is_active ? 'disabled' : ''}>激活</button>
-                <button onclick="deleteKey(${key.id})" class="btn btn-danger" style="padding:4px 12px;">删除</button>
+                <button onclick="activateKey(${key.id})" class="btn btn-sm btn-primary me-1" ${key.is_active ? 'disabled' : ''}>激活</button>
+                <button onclick="deleteKey(${key.id})" class="btn btn-sm btn-danger">删除</button>
             </td>
         </tr>
     `).join('');
@@ -136,6 +136,7 @@ function initUpload() {
     });
 
     document.getElementById('btn-analyze').addEventListener('click', startAnalyze);
+    document.getElementById('btn-auto-generate').addEventListener('click', startAutoGenerate);
 }
 
 async function uploadFile(file) {
@@ -162,21 +163,14 @@ function renderUploadResult(data) {
     const wordFreq = document.getElementById('word-freq');
     const wordEntries = Object.entries(data.word_freq).slice(0, 20);
 
-    // 调试信息
-    console.log('word_freq:', data.word_freq);
-    console.log('word_comments:', data.word_comments);
-    console.log('wordEntries:', wordEntries);
-
     wordFreq.innerHTML = wordEntries
-        .map(([word, count]) => `<span class="word-tag" data-word="${word}">${word} (${count})</span>`)
+        .map(([word, count]) => `<span class="badge bg-primary cursor-pointer" data-word="${word}" style="cursor:pointer;">${word} (${count})</span>`)
         .join('');
 
     // 给高频词标签添加点击事件
-    wordFreq.querySelectorAll('.word-tag').forEach(tag => {
+    wordFreq.querySelectorAll('.badge').forEach(tag => {
         tag.addEventListener('click', () => {
             const word = tag.dataset.word;
-            console.log('点击了:', word);
-            console.log('word_comments[word]:', data.word_comments[word]);
             const comments = data.word_comments[word] || [];
             showModal(word, comments);
         });
@@ -185,7 +179,7 @@ function renderUploadResult(data) {
     const preview = document.getElementById('content-preview');
     preview.innerHTML = data.contents
         .slice(0, 10)
-        .map(content => `<div class="preview-item">${content}</div>`)
+        .map(content => `<div class="p-2 border-bottom">${content}</div>`)
         .join('');
 
     document.getElementById('upload-result').classList.remove('hidden');
@@ -203,7 +197,7 @@ async function startAnalyze() {
     }
 
     // 切换到分析页面
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('[data-page]').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelector('[data-page="analyze"]').classList.add('active');
     document.getElementById('page-analyze').classList.add('active');
@@ -213,6 +207,57 @@ async function startAnalyze() {
     document.getElementById('btn-confirm-topic').classList.remove('hidden');
 }
 
+async function startAutoGenerate() {
+    if (!state.uploadData) {
+        showMessage('请先上传数据');
+        return;
+    }
+
+    // 切换到生成页面
+    document.querySelectorAll('[data-page]').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-page="generate"]').classList.add('active');
+    document.getElementById('page-generate').classList.add('active');
+
+    const output = document.getElementById('content-output');
+    const decisionInfo = document.getElementById('decision-info');
+    output.textContent = '';
+    decisionInfo.textContent = 'Agent 正在分析数据...';
+    state.currentText = '';
+
+    document.getElementById('btn-generate').disabled = true;
+
+    console.log('开始自动生成，word_freq:', state.uploadData.word_freq);
+
+    await generateApi.autoGenerate(
+        state.uploadData.word_freq,
+        (chunk) => {
+            console.log('收到 chunk:', chunk);
+            state.currentText += chunk;
+            output.textContent = state.currentText;
+        },
+        () => {
+            console.log('生成完成');
+            document.getElementById('btn-generate').disabled = false;
+            saveDraft();
+        },
+        (error) => {
+            console.log('生成失败:', error);
+            output.textContent = `生成失败: ${error}`;
+            document.getElementById('btn-generate').disabled = false;
+        },
+        (decision) => {
+            console.log('收到决策:', decision);
+            // 显示 Agent 的决策
+            decisionInfo.innerHTML = `
+                <div class="p-2 border-bottom">✅ Agent 选择了主题：${decision.topics.join('、')}</div>
+                <div class="p-2 border-bottom">✅ Agent 选择了类型：${decision.route_name}</div>
+                <div class="p-2">⏳ 正在生成文案...</div>
+            `;
+        }
+    );
+}
+
 function renderTopicKeywords(wordFreq) {
     const container = document.getElementById('topic-keywords');
     const selectedList = document.getElementById('selected-list');
@@ -220,22 +265,24 @@ function renderTopicKeywords(wordFreq) {
     // 渲染高频词标签
     container.innerHTML = Object.entries(wordFreq)
         .map(([word, count]) => `
-            <div class="topic-keyword-item" data-word="${word}">
+            <span class="badge bg-light text-dark border p-2" data-word="${word}" style="cursor:pointer;">
                 ${word} (${count})
-            </div>
+            </span>
         `).join('');
 
     // 绑定点击事件
-    container.querySelectorAll('.topic-keyword-item').forEach(item => {
+    container.querySelectorAll('.badge').forEach(item => {
         item.addEventListener('click', () => {
             const word = item.dataset.word;
-            if (item.classList.contains('selected')) {
+            if (item.classList.contains('bg-primary')) {
                 // 取消选择
-                item.classList.remove('selected');
+                item.classList.remove('bg-primary', 'text-white');
+                item.classList.add('bg-light', 'text-dark');
                 state.selectedTopics = state.selectedTopics.filter(t => t !== word);
             } else {
                 // 选择
-                item.classList.add('selected');
+                item.classList.remove('bg-light', 'text-dark');
+                item.classList.add('bg-primary', 'text-white');
                 state.selectedTopics.push(word);
             }
             updateSelectedList();
@@ -245,7 +292,7 @@ function renderTopicKeywords(wordFreq) {
     // 更新已选主题列表
     function updateSelectedList() {
         selectedList.innerHTML = state.selectedTopics
-            .map(word => `<span class="selected-tag">${word}</span>`)
+            .map(word => `<span class="badge bg-primary">${word}</span>`)
             .join('');
     }
 }
@@ -257,7 +304,7 @@ function confirmTopic() {
     }
 
     // 切换到生成页面
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('[data-page]').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelector('[data-page="generate"]').classList.add('active');
     document.getElementById('page-generate').classList.add('active');
@@ -344,11 +391,11 @@ async function sendRefine() {
     }
 
     const messages = document.getElementById('chat-messages');
-    messages.innerHTML += `<div class="chat-message user">${instruction}</div>`;
+    messages.innerHTML += `<div class="p-2 mb-2 bg-primary text-white rounded">${instruction}</div>`;
     input.value = '';
 
     const assistantMsg = document.createElement('div');
-    assistantMsg.className = 'chat-message assistant';
+    assistantMsg.className = 'p-2 mb-2 bg-light rounded';
     messages.appendChild(assistantMsg);
 
     // 保存当前文案，然后清空准备接收新文案
@@ -395,28 +442,23 @@ function showMessage(msg) {
 
 // 弹窗功能
 function initModal() {
-    const modal = document.getElementById('modal');
-    const closeBtn = document.getElementById('modal-close');
-
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
+    // Bootstrap Modal 会自动处理关闭按钮
 }
 
 function showModal(title, comments) {
-    const modal = document.getElementById('modal');
     const modalTitle = document.getElementById('modal-title');
     const modalBody = document.getElementById('modal-body');
 
     modalTitle.textContent = `包含「${title}」的评论 (${comments.length}条)`;
     modalBody.innerHTML = comments.length > 0
-        ? comments.map(c => `<div class="modal-comment">${c}</div>`).join('')
-        : '<p style="text-align:center;color:#999;">暂无相关评论</p>';
+        ? comments.map(c => `<div class="p-2 border-bottom">${c}</div>`).join('')
+        : '<p class="text-center text-muted">暂无相关评论</p>';
 
-    modal.classList.remove('hidden');
+    const modal = new bootstrap.Modal(document.getElementById('modal'));
+    modal.show();
 }
 
 function closeModal() {
-    document.getElementById('modal').classList.add('hidden');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('modal'));
+    if (modal) modal.hide();
 }

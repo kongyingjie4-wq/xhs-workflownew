@@ -19,7 +19,7 @@ async function request(url, options = {}) {
 }
 
 // 流式请求方法
-async function streamRequest(url, body, onChunk, onDone, onError) {
+async function streamRequest(url, body, onChunk, onDone, onError, onDecision = null) {
     try {
         const response = await fetch(`${API_BASE}${url}`, {
             method: 'POST',
@@ -51,6 +51,11 @@ async function streamRequest(url, body, onChunk, onDone, onError) {
                         onDone();
                     } else if (data.error) {
                         onError(data.error);
+                    } else if (data.decision) {
+                        // 处理决策信息
+                        if (onDecision) {
+                            onDecision(data.decision);
+                        }
                     } else if (data.chunk) {
                         onChunk(data.chunk);
                     }
@@ -100,6 +105,8 @@ const analyzeApi = {
 const generateApi = {
     generate: (topic, topic_summary, route_type, onChunk, onDone, onError) =>
         streamRequest('/api/generate', { topic, topic_summary, route_type }, onChunk, onDone, onError),
+    autoGenerate: (word_freq, onChunk, onDone, onError, onDecision) =>
+        streamRequest('/api/auto-generate', { word_freq }, onChunk, onDone, onError, onDecision),
 };
 
 // 文案微调 API

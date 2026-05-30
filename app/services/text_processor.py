@@ -207,3 +207,25 @@ def process_contents(contents: list[str]) -> dict:
         "word_comments": word_comments,
         "topic_clusters": topic_clusters,
     }
+
+
+def auto_select_topics(word_freq: dict[str, int]) -> list[str]:
+    """自动选择主题：从高频词中随机选择 1-3 个"""
+    import random
+    if not word_freq:
+        return []
+
+    # 获取所有高频词
+    topics = list(word_freq.keys())
+
+    # 随机选择 1-3 个主题
+    count = min(random.randint(1, 3), len(topics))
+    selected = random.sample(topics, count)
+
+    return selected
+
+
+def auto_select_route() -> str:
+    """自动选择文案类型：随机选择纯科普或营销"""
+    import random
+    return random.choice(["KIND_REMINDER", "MARKETING"])

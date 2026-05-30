@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from app.services.llm_client import chat_completion
 from app.services.llm_service import get_active_config
+from app.services.text_processor import auto_select_topics, auto_select_route
 
 router = APIRouter(prefix="/api", tags=["文案生成"])
 
@@ -83,6 +84,51 @@ async def generate_content(body: GenerateRequest):
 
     async def generate():
         try:
+            async for chunk in await chat_completion(messages, stream=True):
+                yield f"data: {json.dumps({'chunk': chunk}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+class AutoGenerateRequest(BaseModel):
+    word_freq: dict[str, int] = Field(..., description="高频词统计")
+
+
+@router.post("/auto-generate", summary="自动生成文案")
+async def auto_generate_content(body: AutoGenerateRequest):
+    if not get_active_config():
+        raise HTTPException(status_code=400, detail="未配置 API Key，请先在设置中添加")
+
+    # 自动选择主题和类型
+    selected_topics = auto_select_topics(body.word_freq)
+    route_type = auto_select_route()
+
+    if not selected_topics:
+        raise HTTPException(status_code=400, detail="没有足够的高频词，请先导入数据")
+
+    # 构建主题和摘要
+    topic = "、".join(selected_topics)
+    topic_summary = f"用户关注的主题：{topic}"
+
+    # 构建 Prompt
+    messages = build_prompt(topic, topic_summary, RouteType(route_type))
+
+    async def generate():
+        try:
+            # 先返回决策信息
+            decision = {
+                "decision": {
+                    "topics": selected_topics,
+                    "route_type": route_type,
+                    "route_name": "纯科普文案" if route_type == "KIND_REMINDER" else "科普+营销文案"
+                }
+            }
+            yield f"data: {json.dumps(decision, ensure_ascii=False)}\n\n"
+
+            # 再返回生成的文案
             async for chunk in await chat_completion(messages, stream=True):
                 yield f"data: {json.dumps({'chunk': chunk}, ensure_ascii=False)}\n\n"
             yield f"data: {json.dumps({'done': True})}\n\n"

@@ -4,142 +4,222 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>小红书文案生成看板</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- 顶部导航 -->
-        <header class="header">
-            <h1>小红书文案生成看板</h1>
-            <nav class="nav">
-                <button class="nav-btn active" data-page="settings">设置</button>
-                <button class="nav-btn" data-page="upload">数据导入</button>
-                <button class="nav-btn" data-page="analyze">话题分析</button>
-                <button class="nav-btn" data-page="generate">文案生成</button>
-            </nav>
-        </header>
+    <!-- 顶部导航 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">小红书文案生成看板</a>
+            <div class="navbar-nav">
+                <button class="nav-link btn btn-outline-light me-2 active" data-page="settings">设置</button>
+                <button class="nav-link btn btn-outline-light me-2" data-page="upload">数据导入</button>
+                <button class="nav-link btn btn-outline-light me-2" data-page="analyze">话题分析</button>
+                <button class="nav-link btn btn-outline-light" data-page="generate">文案生成</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
 
         <!-- 页面内容 -->
-        <main class="main">
+        <main>
             <!-- 设置页面 -->
             <section id="page-settings" class="page active">
-                <div class="card">
-                    <h2>API Key 管理</h2>
-                    <div class="form-row">
-                        <select id="model-type">
-                            <option value="mimo">mimo</option>
-                            <option value="openai">openai</option>
-                        </select>
-                        <input type="text" id="api-key" placeholder="输入 API Key（至少10个字符）">
-                        <button id="btn-add-key" class="btn btn-primary">添加</button>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">API Key 管理</h5>
                     </div>
-                    <table class="table" id="key-table">
-                        <thead>
-                            <tr>
-                                <th>序号</th>
-                                <th>模型</th>
-                                <th>API Key</th>
-                                <th>状态</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
+                    <div class="card-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col-auto">
+                                <select id="model-type" class="form-select">
+                                    <option value="mimo">mimo</option>
+                                    <option value="openai">openai</option>
+                                </select>
+                            </div>
+                            <div class="col">
+                                <input type="text" id="api-key" class="form-control" placeholder="输入 API Key（至少10个字符）">
+                            </div>
+                            <div class="col-auto">
+                                <button id="btn-add-key" class="btn btn-primary">添加</button>
+                            </div>
+                        </div>
+                        <table class="table table-hover" id="key-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>序号</th>
+                                    <th>模型</th>
+                                    <th>API Key</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h2>产品优势配置</h2>
-                    <textarea id="advantages-text" rows="10" placeholder="在此编辑产品优势..."></textarea>
-                    <button id="btn-save-advantages" class="btn btn-primary">保存</button>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">产品优势配置</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="advantages-text" class="form-control mb-3" rows="6" placeholder="在此编辑产品优势..."></textarea>
+                        <button id="btn-save-advantages" class="btn btn-primary">保存</button>
+                    </div>
                 </div>
 
-                <div class="card">
-                    <h2>提示词配置</h2>
-                    <textarea id="prompt-text" rows="10" placeholder="在此编辑提示词..."></textarea>
-                    <button id="btn-save-prompt" class="btn btn-primary">保存</button>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">提示词配置</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="prompt-text" class="form-control mb-3" rows="6" placeholder="在此编辑提示词..."></textarea>
+                        <button id="btn-save-prompt" class="btn btn-primary">保存</button>
+                    </div>
                 </div>
             </section>
 
             <!-- 数据导入页面 -->
             <section id="page-upload" class="page">
-                <div class="card">
-                    <h2>上传数据文件</h2>
-                    <div class="upload-area" id="upload-area">
-                        <p>拖拽 .jsonl 文件到此处，或点击选择文件</p>
-                        <input type="file" id="file-input" accept=".jsonl" hidden>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">上传数据文件</h5>
                     </div>
-                    <div id="upload-result" class="hidden">
-                        <div class="stats">
-                            <div class="stat-item">
-                                <span class="stat-label">总行数</span>
-                                <span class="stat-value" id="stat-total">0</span>
+                    <div class="card-body">
+                        <div class="upload-area border border-2 border-dashed rounded p-5 text-center" id="upload-area">
+                            <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+                            <p class="mt-2 mb-0">拖拽 .jsonl 文件到此处，或点击选择文件</p>
+                            <input type="file" id="file-input" accept=".jsonl" hidden>
+                        </div>
+                        <div id="upload-result" class="hidden mt-4">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-muted small">总行数</div>
+                                            <div class="fs-4 fw-bold text-primary" id="stat-total">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-muted small">有效行数</div>
+                                            <div class="fs-4 fw-bold text-success" id="stat-valid">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <div class="text-muted small">无效行数</div>
+                                            <div class="fs-4 fw-bold text-danger" id="stat-invalid">0</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-label">有效行数</span>
-                                <span class="stat-value" id="stat-valid">0</span>
+                            <div class="card mb-3">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0">高频词</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="word-freq" class="d-flex flex-wrap gap-2"></div>
+                                </div>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-label">无效行数</span>
-                                <span class="stat-value" id="stat-invalid">0</span>
+                            <div class="card mb-3">
+                                <div class="card-header bg-white">
+                                    <h6 class="mb-0">内容预览</h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <div id="content-preview"></div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button id="btn-analyze" class="btn btn-primary">开始分析</button>
+                                <button id="btn-auto-generate" class="btn btn-success">一键生成文案</button>
                             </div>
                         </div>
-                        <div class="card">
-                            <h3>高频词</h3>
-                            <div id="word-freq" class="word-freq"></div>
-                        </div>
-                        <div class="card">
-                            <h3>内容预览</h3>
-                            <div id="content-preview" class="content-preview"></div>
-                        </div>
-                        <button id="btn-analyze" class="btn btn-primary">开始分析</button>
                     </div>
                 </div>
             </section>
 
             <!-- 话题分析页面 -->
             <section id="page-analyze" class="page">
-                <div class="card">
-                    <h2>选择主题关键词</h2>
-                    <p class="tip">选择至少一个高频词作为文案主题（可多选）</p>
-                    <div id="topic-keywords" class="topic-keywords-select">
-                        <p class="placeholder">请先上传数据并点击「开始分析」</p>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">选择主题关键词</h5>
                     </div>
-                    <div class="selected-topics">
-                        <h3>已选主题：</h3>
-                        <div id="selected-list" class="selected-list"></div>
+                    <div class="card-body">
+                        <p class="text-muted">选择至少一个高频词作为文案主题（可多选）</p>
+                        <div id="topic-keywords" class="d-flex flex-wrap gap-2 mb-3">
+                            <p class="text-muted">请先上传数据并点击「开始分析」</p>
+                        </div>
+                        <div class="mb-3">
+                            <h6>已选主题：</h6>
+                            <div id="selected-list" class="d-flex flex-wrap gap-2"></div>
+                        </div>
+                        <button id="btn-confirm-topic" class="btn btn-primary hidden">确认选题，开始生成文案</button>
                     </div>
-                    <button id="btn-confirm-topic" class="btn btn-primary hidden">确认选题，开始生成文案</button>
                 </div>
             </section>
 
             <!-- 文案生成页面 -->
             <section id="page-generate" class="page">
-                <div class="card">
-                    <h2>生成文案</h2>
-                    <div class="form-row">
-                        <select id="route-type">
-                            <option value="KIND_REMINDER">纯科普文案</option>
-                            <option value="MARKETING">科普+营销文案</option>
-                        </select>
-                        <button id="btn-generate" class="btn btn-primary">生成文案</button>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Agent 决策</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="decision-info" class="p-3 bg-light rounded">
+                            <p class="text-muted mb-0">等待 Agent 决策...</p>
+                        </div>
                     </div>
                 </div>
-                <div class="card">
-                    <h2>文案内容</h2>
-                    <div id="content-output" class="content-output">
-                        <p class="placeholder">选择话题和路线后，点击「生成文案」</p>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">生成文案</h5>
                     </div>
-                    <div class="btn-group">
-                        <button id="btn-copy" class="btn btn-secondary">一键复制</button>
-                        <button id="btn-refine" class="btn btn-secondary">微调文案</button>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col">
+                                <select id="route-type" class="form-select">
+                                    <option value="KIND_REMINDER">纯科普文案</option>
+                                    <option value="MARKETING">科普+营销文案</option>
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button id="btn-generate" class="btn btn-primary">生成文案</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card" id="refine-section" style="display:none;">
-                    <h2>微调对话</h2>
-                    <div id="chat-messages" class="chat-messages"></div>
-                    <div class="chat-input">
-                        <input type="text" id="refine-input" placeholder="输入修改意见...">
-                        <button id="btn-send-refine" class="btn btn-primary">发送</button>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">文案内容</h5>
+                        <div class="d-flex gap-2">
+                            <button id="btn-copy" class="btn btn-sm btn-outline-primary">一键复制</button>
+                            <button id="btn-refine" class="btn btn-sm btn-outline-secondary">微调文案</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="content-output" class="p-3 bg-light rounded" style="min-height: 200px; white-space: pre-wrap;">
+                            <p class="text-muted mb-0">选择话题和路线后，点击「生成文案」</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card shadow-sm mb-4" id="refine-section" style="display:none;">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">微调对话</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chat-messages" class="mb-3" style="max-height: 300px; overflow-y: auto;"></div>
+                        <div class="input-group">
+                            <input type="text" id="refine-input" class="form-control" placeholder="输入修改意见...">
+                            <button id="btn-send-refine" class="btn btn-primary">发送</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -147,16 +227,19 @@
     </div>
 
     <!-- 弹窗：显示关键词对应的评论 -->
-    <div id="modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">关键词评论</h3>
-                <button id="modal-close" class="modal-close">&times;</button>
+    <div id="modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 id="modal-title" class="modal-title">关键词评论</h5>
+                    <button id="modal-close" type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="modal-body" class="modal-body" style="max-height: 400px; overflow-y: auto;"></div>
             </div>
-            <div id="modal-body" class="modal-body"></div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>
